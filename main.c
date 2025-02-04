@@ -3,6 +3,7 @@
 #include<string.h>
 #include<stdint.h>
 #include<stddef.h>
+#include<inttypes.h>
 
 #define MAGIC "heart"
 #define MAGIC_LEN 5
@@ -10,8 +11,9 @@
 uint64_t SEED  = 1207;
 
 typedef struct Hashmap_Entry{
-    uint32_t index;
-    uint64_t blob_seek;
+    char key[256];
+    uint64_t data_ptr; //Offset to blob
+    uint64_t data_size;
 }hashmap_entry;
 
 typedef struct header{
@@ -19,6 +21,7 @@ typedef struct header{
     uint64_t map_ptr; //Offset to start of map
     uint64_t free_ptr; // Offser to first free block
 }header;
+
 
 //Murmurhash3 function for int64 (copied i go no clue how does this shit work)
 uint64_t murmurhash3_64(const void *key, size_t len, uint64_t seed) {
@@ -86,29 +89,11 @@ void write_header(FILE* fp,header Header){
 
 
 int read_header(FILE* fp){
-    char magic[5] = {0};
-    if(fread(magic,sizeof(char),MAGIC_LEN,fp) != MAGIC_LEN){
+    header rHeader;
+    if(fread(&rHeader,sizeof(header),1,fp) != 1){
         return -1;
     }
-
-    if(strcmp(MAGIC,magic) != 0){
-        fprintf(stderr,"INVALID FILE FORMAT MAGIC NUMBER MISMATCH\n");
-        return -1;
-    }
-    else{
-        printf("magic : %s\n",magic);
-    }
-
-    int max_num_records = 0;
-    if(fread(&max_num_records,sizeof(uint32_t),1,fp) != 1){
-        return -1;
-    }
-    printf("MAX NUMBER OF RECORDS : %d\n",max_num_records);
-    int num_records = 0;
-    if(fread(&num_records,sizeof(uint32_t),1,fp) != 1){
-        return -1;
-    }
-    printf("NUMBER OF RECORDS PRESENT : %d\n",num_records);
+    printf("HEADER DATA READ %s\n %"PRIu64"\n %"PRIu64"\n",rHeader.magic,rHeader.free_ptr,rHeader.map_ptr);
     return 1;
 }
 
